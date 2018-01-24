@@ -1,53 +1,70 @@
 ### Data Extraction for BCC and non BCC ###
 import h5py
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 
 items = dict()
 testing = ['bcc', 'map_t']
 tissues_used = []
 
-# Looking through all the files that are compatible with h5py
-# Ignoring the files with 2 tasks first
-for x in range(3, 72):
+def preProcess(folder_name):
 
-    try:
-        mat = h5py.File('./RamanData/tissue_' + str(x) + '.mat')
+    start = time.time()
+    BCCData = []
+    RamanData = []
+    tissues_used = []
 
-        # Checking just for BCC data in all the files
-        if testing[0] in list(mat.keys()):
-            bcc = np.array(mat[testing[0]])
-            RamanMap = np.array(mat[testing[1] + str(x)])
+    for x in range(3, 72):
 
-            # Cheking for dimension mismatch
-            # If there is no dimension mismatch organise data to be raman input and BCC/NonBCC cell output
-            if bcc.shape[0] == RamanMap.shape[1] and bcc.shape[1] == RamanMap.shape[2]:
+        try:
+            mat = h5py.File(folder_name + str(x) + '.mat')
 
-                # Keeping track of which tissue is used
-                tissues_used.append('tissue_' + str(x))
+            # Checking just for BCC data in all the files
+            if testing[0] in list(mat.keys()):
+                bcc = np.array(mat[testing[0]])
+                RamanMap = np.array(mat[testing[1] + str(x)])
 
-                # Organising Data
-                for row in range(0,bcc.shape[0]):
-                    for column in range(0,bcc.shape[1]):
-                        RamanData = RamanMap[:,row,column]
-                        BCCData = bcc[row,column]
+                # Cheking for dimension mismatch
+                # If there is no dimension mismatch organise data to be raman input and BCC/NonBCC cell output
+                if bcc.shape[0] == RamanMap.shape[1] and bcc.shape[1] == RamanMap.shape[2]:
+                    BCCData.append(bcc)
+                    RamanData.append(RamanMap)
+                    tissues_used.append(x)
 
-                        if row == 0 and column == 0:
-                            data = np.append(RamanData,BCCData)
+        except OSError:
+            print(x, 'OSError')
 
-                        else:
-                            temp_data = np.append(RamanData,BCCData)
-                            data = np.concatenate([data,temp_data],axis=0)
+        except KeyError:
+            print(x, 'KeyError')
 
-            else:
-                print(x, 'Dimension Mismatch')
+    elapsed = time.time() - start
+    print(elapsed)
 
-    except OSError:
-        print(x, 'OSError')
+    return BCCData,RamanData,tissues_used
 
-    except KeyError:
-        print(x, 'KeyError')
+def initalizeArray(bcc):
+    row_size = 0
 
-    except ValueError:
-        print(x, 'ValueError')
+    for item in range(len(bcc)):
+        row_size += bcc[item].shape[0] * bcc[item].shape[1]
+
+    return row_size
+
+def organiseData(bcc,raman):
+
+    row_size = initalizeArray(bcc)
+    data = np.zeros((row_size,1025))
+    counter = 0
+
+    for item in range(len(bcc)):
+        for row in range(0, bcc[item].shape[0]):
+            for column in range(0, bcc[item].shape[1]):
+
+                data[counter,:-1] = raman[item][:, row, column]
+                data[counter,-1] = bcc[item][row, column]
+                counter += 1
+
+    return data
+
 
