@@ -13,8 +13,8 @@ def import_data(folder_name):
 
     return data,X,y
 
-# Seperating data - with the main goal of normalizing the dataset w.r.t only the non-bcc raman data
-def seperate(data):
+# Separating data - with the main goal of normalizing the dataset w.r.t only the non-bcc raman data
+def separate(data):
 
     # Initializing matrix so store the bcc data and non bcc data
     row_data = data.shape[0]
@@ -46,11 +46,17 @@ def split_normalize(X,y):
     # random_state is property that if you don't set it everytime you run the function there is a different outcome
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.1)
 
-    # Feature Scaling - using non-bcc Raman spectra as a base
+    # Feature Scaling
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
+
+    # Feature Scaling - using bcc Raman spectra as a base
+    # bcc,nonbcc = seperate(np.concatenate([X_train,y_train.reshape(len(y_train),1)],axis=1))
+    # bcc = bcc.mean(axis=0)
+    # X_train = X_train - bcc
+    # X_test = X_test - bcc
 
     return X_train, X_test, y_train, y_test
 
@@ -66,10 +72,10 @@ def neural_network(X_train, X_test, y_train, y_test):
 
     # Adding to the input layer and the first hidden layer
     # kernel_initializer refers to inital weights
-    classifier.add(Dense(units=50, kernel_initializer='uniform', activation='sigmoid', input_dim=1024))
+    classifier.add(Dense(units=500, kernel_initializer='uniform', activation='sigmoid', input_dim=1024))
 
     # Adding second layer
-    classifier.add(Dense(units=50, kernel_initializer='uniform', activation='sigmoid'))
+    classifier.add(Dense(units=500, kernel_initializer='uniform', activation='sigmoid'))
 
     # Adding output layer
     classifier.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
@@ -80,7 +86,7 @@ def neural_network(X_train, X_test, y_train, y_test):
     classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
     # Fitting classifier to training set
-    classifier.fit(X_train, y_train, batch_size=100, epochs=10)
+    classifier.fit(X_train, y_train, batch_size=1000, epochs=10)
 
     # Predicting the Test set results
     y_pred = classifier.predict(X_test)
@@ -91,3 +97,6 @@ def neural_network(X_train, X_test, y_train, y_test):
     cm = confusion_matrix(y_test, y_pred)
 
     return cm
+
+
+
