@@ -65,13 +65,23 @@ def findTissue(folder_name,key):
 
     return tissue
 
+# This function converts the ones in the matrix to the index
+def convert(matrix,index):
 
-# Returns 3 lists - Map of label indicated , Raman Data, Tissues Used
+    for x in range(matrix.shape[0]):
+        for y in range(matrix.shape[1]):
+            if matrix[x,y] == 1:
+                matrix[x,y] = index
+
+    return matrix
+
+# Returns 3 lists - Map of labels indicated , Raman Data, Tissues Used
 # Map of label - in the form of a list of 2D matrices
 # Raman Data - in the form of a list of 3D matrices
-def preProcess1(folder_name,testing_label):
+def preProcessAllLabels(folder_name):
 
     # Initializing variables
+    known_labels = ['bcc','dermis','fat','epi']
     label = []
     RamanData = []
     tissues_used = []
@@ -84,8 +94,34 @@ def preProcess1(folder_name,testing_label):
             keys = list(mat.keys())
 
             # Checking just for BCC data in all the files
-            if testing_label in keys:
-                label_map = np.array(mat[testing_label])
+            present_labels = [item for item in keys if item in known_labels]
+
+            if present_labels:
+
+                label_map = np.zeros(mat[present_labels[0]].shape)
+
+                for key in present_labels:
+
+                    if key == 'bcc':
+
+                        temp = convert(np.array(mat[key]), 1)
+                        label_map = label_map + temp
+
+                    elif key == 'dermis':
+
+                        temp = convert(np.array(mat[key]),2)
+                        label_map = label_map + temp
+
+                    elif key == 'fat':
+
+                        temp = convert(np.array(mat[key]),3)
+                        label_map = label_map + temp
+
+                    elif key == 'epi':
+
+                        temp = convert(np.array(mat[key]),4)
+                        label_map = label_map + temp
+
                 RamanMap = np.array(mat['map_t' + str(x)])
 
             else:
@@ -99,13 +135,18 @@ def preProcess1(folder_name,testing_label):
                 tissues_used.append(x)
 
         except OSError:
-            print(x, 'OSError')
+            print(x, OSError)
 
+        # This is due to the tissue not having any of the keys
         except KeyError:
-            print(x, 'KeyError')
+            print(x, KeyError)
 
         except IndexError:
-            print(x, 'IndexError')
+            print(x, IndexError)
+
+        # This error is due to different keys having different shapes
+        except ValueError:
+            print(x, ValueError)
 
     return label, RamanData, tissues_used
 
@@ -183,84 +224,11 @@ def organiseData(label,raman):
 
     return data
 
-def convert(matrix,index):
-
-    for x in range(matrix.shape[0]):
-        for y in range(matrix.shape[1]):
-            if matrix[x,y] == 1:
-                matrix[x,y] = index
-
-    return matrix
-
-def preProcessAllLabels(folder_name):
-
-    # Initializing variables
-    known_labels = ['bcc','dermis','fat','epi']
-    label = []
-    RamanData = []
-    tissues_used = []
-
-    for x in range(3, 72):
-
-        try:
-            # Opening file and obtaining keys
-            mat = h5py.File(folder_name + str(x) + '.mat')
-            keys = list(mat.keys())
-
-            # Checking just for BCC data in all the files
-            present_labels = [item for item in keys if item in known_labels]
-
-            if present_labels:
-                for key in present_labels:
-
-                    label_map = np.zeros(mat[key].shape)
-
-                    if key == 'bcc':
-
-                        label_map = label_map + np.array(mat[key])
-
-                    elif key == 'dermis':
-
-                        temp = convert(np.array(mat[key]),2)
-                        label_map = label_map + temp
-
-                    elif key == 'fat':
-
-                        temp = convert(np.array(mat[key]),3)
-                        label_map = label_map + temp
-
-                    elif key == 'epi':
-
-                        temp = convert(np.array(mat[key]),4)
-                        label_map = label_map + temp
-
-                RamanMap = np.array(mat['map_t' + str(x)])
-
-            else:
-                continue
-
-            # Cheking for dimension mismatch
-            # If there is no dimension mismatch organise data to be raman input and BCC/NonBCC cell output
-            if label_map.shape[0] == RamanMap.shape[1] and label_map.shape[1] == RamanMap.shape[2]:
-                label.append(label_map)
-                RamanData.append(RamanMap)
-                tissues_used.append(x)
-
-        except OSError:
-            print(x, 'OSError')
-
-        except KeyError:
-            print(x, 'KeyError')
-
-        except IndexError:
-            print(x, 'IndexError')
-
-    return label, RamanData, tissues_used
-
 
 # Saving Data
-np.save('BCC_Data_2',data)
-np.save('Tissues_Used_2',tissue_used)
+np.save('BCC_Data_4',data)
+np.save('Tissues_Used_4',tissues_used)
+np.save('Keys_Used_4',keys_used)
 
 
 

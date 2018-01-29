@@ -2,7 +2,7 @@
 
 import numpy as np
 
-folder_name = 'BCC&NoBCC_Classification/BCC_Data_2.npy'
+folder_name = 'Classification_Data/BCC_Data_4.npy'
 
 # Importing dataset
 def import_data(folder_name):
@@ -38,13 +38,38 @@ def separate(data):
 
     return bcc_store[:,:-1],non_bcc_store[:,:-1]
 
-# Splitting dataset into training and test set & Feature Scaling
-def split_normalize(X,y):
+# Counts the number of each label within the dataset
+def count(labels):
+
+    label_counter = {}
+
+    for item in labels:
+        if item not in label_counter:
+            label_counter[item] = 1
+
+        else:
+            label_counter[item] += 1
+
+    return label_counter
+
+# Encode output
+def encode(y):
+
+    from keras.utils import np_utils
+    return np_utils.to_categorical(y)
+
+# Splitting dataset into training and test set
+def split(X,y):
 
     # Splitting dataset into training and test set
     from sklearn.model_selection import train_test_split
     # random_state is property that if you don't set it everytime you run the function there is a different outcome
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.1)
+
+    return X_train, X_test, y_train, y_test
+
+#Feature Scaling
+def normalize(X_train,X_test):
 
     # Feature Scaling
     from sklearn.preprocessing import StandardScaler
@@ -52,13 +77,7 @@ def split_normalize(X,y):
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
 
-    # Feature Scaling - using bcc Raman spectra as a base
-    # bcc,nonbcc = seperate(np.concatenate([X_train,y_train.reshape(len(y_train),1)],axis=1))
-    # bcc = bcc.mean(axis=0)
-    # X_train = X_train - bcc
-    # X_test = X_test - bcc
-
-    return X_train, X_test, y_train, y_test
+    return X_train,X_test
 
 # Running ANN algorithm
 def neural_network(X_train, X_test, y_train, y_test):
@@ -72,25 +91,51 @@ def neural_network(X_train, X_test, y_train, y_test):
 
     # Adding to the input layer and the first hidden layer
     # kernel_initializer refers to inital weights
-    classifier.add(Dense(units=500, kernel_initializer='uniform', activation='sigmoid', input_dim=1024))
+    classifier.add(Dense(units=64, kernel_initializer='uniform', activation='relu', input_dim=1024))
 
     # Adding second layer
-    classifier.add(Dense(units=500, kernel_initializer='uniform', activation='sigmoid'))
+    classifier.add(Dense(units=64, kernel_initializer='uniform', activation='relu'))
+
+    # Adding third layer
+    classifier.add(Dense(units=64, kernel_initializer='uniform', activation='relu'))
 
     # Adding output layer
-    classifier.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
+    classifier.add(Dense(units=5, kernel_initializer='uniform', activation='softmax'))
 
     # Compiling the ANN
     # optimizer: algorithm you want to use to find the optimal set of weights, adam is stochastic gradient descent
     # loss: loss function - binary_crossentropy is the logarithmic loss function
-    classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     # Fitting classifier to training set
-    classifier.fit(X_train, y_train, batch_size=1000, epochs=10)
+    classifier.fit(X_train, y_train, batch_size=1000, epochs=5)
+
+    return classifier
+
+
+def assessSingleClassModel(classifier,X_test):
+
+    prediction = classifier.predict(X_test)
+    prediction = (prediction>0.5)
+
+    return prediction
+
+def assessMulitClassModel(classifier,X_test):
 
     # Predicting the Test set results
-    y_pred = classifier.predict(X_test)
-    y_pred = (y_pred>0.5)
+    prediction = classifier.predict(X_test)
+    encoded_prediction = np.zeros(prediction.shape)
+
+    for x in range(prediction.shape[0]):
+        index = max(prediction[x,:])
+        for y in range(prediction.shape[1]):
+
+            if prediction[x,y] == index:
+                encoded_prediction[x,y] = 1
+
+    return encoded_prediction
+
+def singleLabelConfusionMatrix(y_test,y_pred):
 
     # Making the Confusion Matrix
     from sklearn.metrics import confusion_matrix
@@ -98,5 +143,20 @@ def neural_network(X_train, X_test, y_train, y_test):
 
     return cm
 
+def multiLabelConfusionMatrix(y_test,y_pred):
 
+     # Initializing memory for confusion matrix
+     cm = np.zeros((y_test.shape[1],y_test.shape[1],))
+
+     for x in range(y_test.shape[0]):
+
+         row_test = list(y_test[x,:])
+         row_pred = list(y_pred[x, :])
+
+         test_index = row_test.index(max(row_test))
+         pred_index = row_pred.index(max(row_pred))
+
+         cm[test_index,pred_index] += 1
+
+     return cm
 
