@@ -2,9 +2,9 @@
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-folder_name = 'BCC&NoBCC_Classification/BCC_Data_2.npy'
+
+folder_name = 'BCC&NoBCC_Classification/2/BCC_Data_2.npy'
 
 # Importing dataset
 def import_data(folder_name):
@@ -79,8 +79,19 @@ def normalize(X_train,X_test):
 
     return X_train,X_test
 
+import keras
+
+class History(keras.callbacks.Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+        self.acc = []
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses.append(logs.get('loss'))
+        self.acc.append(logs.get('acc'))
+
 # Running ANN algorithm
-def neural_network(X_train, X_test, y_train, y_test):
+def neural_network(X_train, y_train):
 
     # Making the ANN
     from keras.models import Sequential
@@ -102,77 +113,15 @@ def neural_network(X_train, X_test, y_train, y_test):
     # Adding output layer
     classifier.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
 
+    # Initializing classes to store loss and accuracy history
+    history = History()
+
     # Compiling the ANN
     # optimizer: algorithm you want to use to find the optimal set of weights, adam is stochastic gradient descent
     # loss: loss function - binary_crossentropy is the logarithmic loss function
     classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
     # Fitting classifier to training set
-    classifier.fit(X_train, y_train, batch_size=1000, epochs=10)
+    classifier.fit(X_train, y_train, batch_size=1000, epochs=10, callbacks=[history])
 
-    return classifier
-
-
-def assessSingleClassModel(classifier,X_test,threshold):
-
-    prediction = classifier.predict(X_test)
-    prediction = (prediction>threshold)
-
-    return prediction
-
-def assessMultiClassModel(classifier,X_test):
-
-    # Predicting the Test set results
-    prediction = classifier.predict(X_test)
-    encoded_prediction = np.zeros(prediction.shape)
-
-    for x in range(prediction.shape[0]):
-        index = max(prediction[x,:])
-        for y in range(prediction.shape[1]):
-
-            if prediction[x,y] == index:
-                encoded_prediction[x,y] = 1
-
-    return encoded_prediction
-
-def singleLabelConfusionMatrix(y_test,y_pred):
-
-    # Making the Confusion Matrix
-    from sklearn.metrics import confusion_matrix
-    cm = confusion_matrix(y_test, y_pred)
-
-    return cm
-
-def multiLabelConfusionMatrix(y_test,y_pred):
-
-     # Initializing memory for confusion matrix
-     cm = np.zeros((y_test.shape[1],y_test.shape[1],))
-
-     for x in range(y_test.shape[0]):
-
-         row_test = list(y_test[x,:])
-         row_pred = list(y_pred[x, :])
-
-         test_index = row_test.index(max(row_test))
-         pred_index = row_pred.index(max(row_pred))
-
-         cm[test_index,pred_index] += 1
-
-     return cm
-
-def ROC(classifier,X_test,y_test):
-
-    thresholds = np.arange(0.1,1,0.02)
-    store = []
-
-    for threshold in thresholds:
-        prediction = assessSingleClassModel(classifier,X_test,threshold)
-        cm = singleLabelConfusionMatrix(y_test,prediction)
-        TPR = cm[1][1]/(cm[1][1]+cm[1][0])
-        FPR = cm[0][1]/(cm[0][1]+cm[0][0])
-        store.append((TPR,FPR,threshold))
-
-    store = pd.DataFrame(store)
-    store.columns = ['TPR','FPR','Threshold']
-
-    return store
+    return classifier,history
