@@ -1,3 +1,8 @@
+## Testing Neural Network fo classifying BCC and non BCC cells
+
+import numpy as np
+import pandas as pd
+
 def assessSingleClassModel(classifier,X_test,threshold):
 
     prediction = classifier.predict(X_test)
@@ -45,9 +50,43 @@ def multiLabelConfusionMatrix(y_test,y_pred):
 
      return cm
 
-def ROC(classifier,X_test,y_test):
+def getImage(fileNumber):
 
-    thresholds = np.arange(0.1,1,0.02)
+    import h5py
+    mat = h5py.File('./RamanData/tissue_' + fileNumber + '.mat')
+    label_map = np.array(mat['bcc'])
+    RamanMap = np.array(mat['map_t' + fileNumber])
+
+    return label_map,RamanMap
+
+# Returns a labelled array
+def labelImage(classifier,raman_image,threshold):
+
+    predicted_image = np.zeros((raman_image.shape[1],raman_image.shape[2]))
+
+    for row in range(raman_image.shape[1]):
+        for column in range(raman_image.shape[2]):
+            predicted_image[row][column] = classifier.predict(raman_image[:,row,column].reshape(1,-1))
+
+    predicted_image = (predicted_image>threshold)
+
+    return predicted_image
+
+# Plot real and predicted image side by side
+def compare(image,predicted_image):
+
+    import matplotlib.pyplot as plt
+
+    plt.subplot(1,2,1)
+    plt.imshow(image)
+    plt.title('Original')
+    plt.subplot(1,2,2)
+    plt.imshow(predicted_image)
+    plt.title('Predicted')
+
+def ROC(classifier,X_test,y_test,thresholds):
+
+
     store = []
 
     for threshold in thresholds:
@@ -62,6 +101,7 @@ def ROC(classifier,X_test,y_test):
 
     return store
 
+# Saves model in 2 files i.e. model structure and model weights
 def save_classifier(model):
 
     model_json = model.to_json()
@@ -75,6 +115,7 @@ def save_classifier(model):
 classifier_file = 'Classifiers/2/model.json'
 weights_file = 'Classifiers/2/model.h5'
 
+# Returns saved classifier
 def load_classifier(classifier_file,weights_file):
 
     from keras.models import model_from_json

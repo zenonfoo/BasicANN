@@ -1,8 +1,6 @@
-## Neural Network fo classifying BCC and non BCC cells
+## Training Neural Network fo classifying BCC and non BCC cells
 
 import numpy as np
-import pandas as pd
-
 
 folder_name = 'BCC&NoBCC_Classification/2/BCC_Data_2.npy'
 
@@ -77,7 +75,7 @@ def normalize(X_train,X_test):
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
 
-    return X_train,X_test
+    return X_train,X_test,sc
 
 import keras
 
@@ -90,38 +88,59 @@ class History(keras.callbacks.Callback):
         self.losses.append(logs.get('loss'))
         self.acc.append(logs.get('acc'))
 
+def create_paramaters(units,layers,initializer,validation_split,activation,optimizer,epochs):
+
+    parameters = {}
+    parameters['units'] = units
+    parameters['layers'] = layers
+    parameters['initializer'] = initializer
+    parameters['validation_split'] = validation_split
+    parameters['activation'] = activation
+    parameters['optimizer'] = optimizer
+    parameters['epochs'] = epochs
+
+    return parameters
+
 # Running ANN algorithm
-def neural_network(X_train, y_train):
+def neural_network(X_train, y_train, parameters):
 
     # Making the ANN
     from keras.models import Sequential
     from keras.layers import Dense
+    from keras import optimizers
 
     # Initializing the ANN
     classifier = Sequential()
 
-    # Adding to the input layer and the first hidden layer
-    # kernel_initializer refers to inital weights
-    classifier.add(Dense(units=100, kernel_initializer='uniform', activation='sigmoid', input_dim=1024))
+    # Adding input and hidden layers
+    for layer in range(parameters['layers']):
 
-    # Adding second layer
-    classifier.add(Dense(units=100, kernel_initializer='uniform', activation='sigmoid'))
+        if layer == 0:
+            # kernel_initializer refers to inital weights
+            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializier'],
+                                 activation=parameters['activation'], input_dim=1024))
 
-    # Adding third layer
-    classifier.add(Dense(units=100, kernel_initializer='uniform', activation='sigmoid'))
+        else:
+            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializier'],
+                                 activation=parameters['activation']))
 
     # Adding output layer
-    classifier.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
+    classifier.add(Dense(units=1, kernel_initializer=parameters['initializer'],
+                         activation=parameters['sigmoid']))
 
     # Initializing classes to store loss and accuracy history
     history = History()
 
+    # Initialising optimizer for specified arguments
+    # sgd = optimizers.SGD(   )
+
     # Compiling the ANN
     # optimizer: algorithm you want to use to find the optimal set of weights, adam is stochastic gradient descent
     # loss: loss function - binary_crossentropy is the logarithmic loss function
-    classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    classifier.compile(optimizer=parameters['optimizer'], loss='binary_crossentropy', metrics=['accuracy'])
 
     # Fitting classifier to training set
-    classifier.fit(X_train, y_train, batch_size=1000, epochs=10, callbacks=[history])
+    classifier.fit(X_train, y_train, batch_size=1000, epochs=parameters['epochs'],
+                   validation_split=parameters['validation_split'], callbacks=[history])
 
     return classifier,history
