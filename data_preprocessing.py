@@ -249,13 +249,70 @@ def initializeGrid(label,gridlength):
 
     return num_of_grids
 
-# Needs working on
-# Function returns the centre of all the indices of the square grids given we know the biggest
-# image we have is 200x200
-# def getGridCentre(gridlength):
-#
-#     label_index = np.arange(1, 197, 3)
+# Cut off edges so that we only get complete grid sizes
+def cut_off(label,raman,gridlength):
 
+    cut_label = []
+    cut_raman = []
+
+    for item in label:
+        cut_label.append(item[:(item.shape[0]//gridlength)*gridlength][:(item.shape[1]//gridlength)*gridlength])
+
+    for item in raman:
+        cut_raman.append(item[:][:(item.shape[1]//gridlength)*gridlength][:(item.shape[2]//gridlength)*gridlength])
+
+    return cut_label,cut_raman
+
+def convert_grid(data,gridlength,orginial_data,dimensionalized_data,raman_length,row,column_index):
+
+    # For each raman data we have that have been stretched out into 2D
+    for column in range(dimensionalized_data.shape[1]):
+
+        data[row, column_index:column_index + raman_length] = dimensionalized_data[:, column]
+
+        # If you've finished one row of grid shaped data
+        if column + 1 == gridlength * orginial_data.shape[2]:
+            row = row + 1
+            column_index = 0
+
+        # If I reach the column length of the image
+        elif (column + 1) % orginial_data.shape[1] == 0:
+            row = 0
+            column_index += raman_length
+
+        # If I reach the grid length
+        elif (column + 1) % gridlength == 0:
+            row = row + 1
+
+        else:
+            column_index += raman_length
+
+    return data
+
+def obtainGridData(label, raman, gridlength):
+    row_size = initializeGrid(label, gridlength)
+
+    # Initializing memory to store our input data for out network
+    data = np.zeros((row_size, 1024 * (gridlength ** 2) + 1))
+
+    # Cut off excess image
+    label, raman = cut_off(label, raman, gridlength)
+
+    counter = 0
+    # For each image that we have
+    for item in raman:
+
+        # Reduce by one dimension
+        temp = item.reshape(1024,item.shape[1]*item.shape[2])
+
+        # Initialize variable
+        raman_length = 1024
+        row = 0
+        column_index = 0
+
+        data = convert_grid(data,gridlength,item,temp,raman_length,row,column_index)
+
+    return data
 
 # Needs working on
 # This function organises the data by where the column has points, that is representative of
@@ -263,57 +320,59 @@ def initializeGrid(label,gridlength):
 # cell
 # The grid length argument is to indicate the size of the square you want to use as input to train
 # the network
-# def organiseData2(label,raman,gridlength):
-#
-#     row_size = initializeGrid(label,gridlength)
-#
-#     # Initializing memory to store our input data for out network
-#     data = np.zeros((row_size, 1024 * (gridlength ** 2) + 1))
-#
-#     counter = 0
-#
-#
-#     # For each image that we have
-#     for item in range(len(label)):
-#
-#         # Initializing variables
-#         temp_column_index = 0
-#         data_row = 0
-#         row_index = 0
-#         column_index = 0
-#
-#         for row in range(label[item].shape[0]):
-#
-#             # If the row has reached the length of the grid save data_row + 1 so that we go back to this row
-#             # instead of the very top row
-#             if (row + 1) % gridlength == 0:
-#                 row_index = data_row + 1
-#                 column_index = 0
-#
-#             elif row != 0:
-#                 column_index = column_index + gridlength
-#
-#             for column in range(label[item].shape[1]):
-#
-#                 data[data_row, temp_column_index * 1024:temp_column_index * 1024 + 1024] = raman[item][:, row, column]
-#
-#                 # If the column index reaches the length of the column go back to row index
-#                 if column+1 == label[item].shape[1]:
-#                     data_row = row_index
-#
-#                 if (column+1) % gridlength == 0:
-#                     data_row += 1
-#                     temp_column_index = column_index
-#
-#                 else:
-#                     temp_column_index += 1
-#
-#                 grid_centers = np.arange(gridlength//2,max(label[item].shape[0]//gridlength,label[item].shape[1]//gridlength),gridlength)
-#
-#                 if row and column in grid_centers:
-#                     data[data_row, -1] = label[item][row, column]
-#
-#     return data
+def organiseData2(label,raman,gridlength):
+
+    row_size = initializeGrid(label,gridlength)
+
+    # Initializing memory to store our input data for out network
+    data = np.zeros((row_size, 1024 * (gridlength ** 2) + 1))
+
+    # Cut off excess image
+    label,raman = cut_off(label,raman,gridlength)
+
+    counter = 0
+
+    # For each image that we have
+    for item in range(len(label)):
+
+        # Initializing variables
+        temp_column_index = 0
+        data_row = 0
+        row_index = 0
+        column_index = 0
+
+        for row in range(label[item].shape[0]):
+
+            # If the row has reached the length of the grid save data_row + 1 so that we go back to this row
+            # instead of the very top row
+            if (row + 1) % gridlength == 0:
+                row_index = data_row + 1
+                column_index = 0
+
+            elif row != 0:
+                column_index = column_index + gridlength
+
+            for column in range(label[item].shape[1]):
+
+                data[data_row, temp_column_index * 1024:temp_column_index * 1024 + 1024] = raman[item][:, row, column]
+
+                # If the column index reaches the length of the column go back to row index
+                if column+1 == label[item].shape[1]:
+                    data_row = row_index
+
+                if (column+1) % gridlength == 0:
+                    data_row += 1
+                    temp_column_index = column_index
+
+                else:
+                    temp_column_index += 1
+
+                grid_centers = np.arange(gridlength//2,max(label[item].shape[0]//gridlength,label[item].shape[1]//gridlength),gridlength)
+
+                if row and column in grid_centers:
+                    data[data_row, -1] = label[item][row, column]
+
+    return data
 
 # Saving Data
 # np.save('BCC_Data_4',data)

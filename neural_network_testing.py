@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import confusion_matrix
 
 def assessSingleClassModel(classifier,X_test,threshold):
 
@@ -24,14 +25,6 @@ def assessMultiClassModel(classifier,X_test):
                 encoded_prediction[x,y] = 1
 
     return encoded_prediction
-
-def singleLabelConfusionMatrix(y_test,y_pred):
-
-    # Making the Confusion Matrix
-    from sklearn.metrics import confusion_matrix
-    cm = confusion_matrix(y_test, y_pred)
-
-    return cm
 
 def multiLabelConfusionMatrix(y_test,y_pred):
 
@@ -86,12 +79,14 @@ def compare(image,predicted_image):
 
 def ROC(classifier,X_test,y_test,thresholds):
 
-
     store = []
 
     for threshold in thresholds:
         prediction = assessSingleClassModel(classifier,X_test,threshold)
-        cm = singleLabelConfusionMatrix(y_test,prediction)
+
+        # Making the Confusion Matrix
+        cm = confusion_matrix(y_test, prediction)
+
         TPR = cm[1][1]/(cm[1][1]+cm[1][0])
         FPR = cm[0][1]/(cm[0][1]+cm[0][0])
         store.append((TPR,FPR,threshold))

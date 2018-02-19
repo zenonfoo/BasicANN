@@ -88,7 +88,7 @@ class History(keras.callbacks.Callback):
         self.losses.append(logs.get('loss'))
         self.acc.append(logs.get('acc'))
 
-def create_paramaters(units,layers,initializer,validation_split,activation,optimizer,epochs):
+def create_paramaters(units,layers,initializer,validation_split,activation,optimizer,batch,epochs):
 
     parameters = {}
     parameters['units'] = units
@@ -97,6 +97,7 @@ def create_paramaters(units,layers,initializer,validation_split,activation,optim
     parameters['validation_split'] = validation_split
     parameters['activation'] = activation
     parameters['optimizer'] = optimizer
+    parameters['batch'] = batch
     parameters['epochs'] = epochs
 
     return parameters
@@ -107,7 +108,6 @@ def neural_network(X_train, y_train, parameters):
     # Making the ANN
     from keras.models import Sequential
     from keras.layers import Dense
-    from keras import optimizers
 
     # Initializing the ANN
     classifier = Sequential()
@@ -117,22 +117,19 @@ def neural_network(X_train, y_train, parameters):
 
         if layer == 0:
             # kernel_initializer refers to inital weights
-            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializier'],
+            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
                                  activation=parameters['activation'], input_dim=1024))
 
         else:
-            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializier'],
+            classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
                                  activation=parameters['activation']))
 
     # Adding output layer
     classifier.add(Dense(units=1, kernel_initializer=parameters['initializer'],
-                         activation=parameters['sigmoid']))
+                         activation=parameters['activation']))
 
     # Initializing classes to store loss and accuracy history
     history = History()
-
-    # Initialising optimizer for specified arguments
-    # sgd = optimizers.SGD(   )
 
     # Compiling the ANN
     # optimizer: algorithm you want to use to find the optimal set of weights, adam is stochastic gradient descent
@@ -140,7 +137,6 @@ def neural_network(X_train, y_train, parameters):
     classifier.compile(optimizer=parameters['optimizer'], loss='binary_crossentropy', metrics=['accuracy'])
 
     # Fitting classifier to training set
-    classifier.fit(X_train, y_train, batch_size=1000, epochs=parameters['epochs'],
-                   validation_split=parameters['validation_split'], callbacks=[history])
+    classifier.fit(X_train, y_train, batch_size=parameters['batch'], epochs=parameters['epochs'], callbacks=[history])
 
     return classifier,history

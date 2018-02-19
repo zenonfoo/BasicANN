@@ -9,7 +9,7 @@ folder = './RamanData/tissue_'
 label = 'bcc'
 
 # Loading Data
-label_data,raman_data,tissues_used = preprocess.preProcessBCC(folder_name=folder,testing_label=testing)
+label_data,raman_data,tissues_used = preprocess.preProcessBCC(folder_name=folder,testing_label=label)
 
 # Processing Data
 data = preprocess.organiseData(label=label_data,raman=raman_data)
@@ -19,27 +19,31 @@ data = preprocess.organiseData(label=label_data,raman=raman_data)
 X = data[:, :-1]
 y = data[:, -1]
 
+# Loading Data if data is already saved
+folder_name = 'BCC&NoBCC_Classification/2/BCC_Data_2.npy'
+data,X,y = training.import_data(folder_name)
+
 # Splitting dataset into training and test set
 X_train, X_test, y_train, y_test = training.split(X,y)
 
 # Feature Scaling
 # sc variable is to be used later on to fit testing data
-X_train,X_test,sc = training.normalize()
+X_train,X_test,sc = training.normalize(X_train,X_test)
 
 # Initializing parameters for neural network
 parameters = training.create_paramaters(units=100,layers=3,initializer='uniform',
                                         validation_split=0.1,activation='sigmoid',
-                                        optimizer='adam',epochs=10)
+                                        optimizer='adam',batch=5000,epochs=25)
 
 # Training Neural Network
-classifier,history = training.neural_network(X_train,y_train)
+classifier,history = training.neural_network(X_train,y_train,parameters)
 
 ### Testing ###
 # Prediction
 prediction = testing.assessSingleClassModel(classifier,X_test)
 
 # Confusion Matrix
-cm = testing.singleLabelConfusionMatrix(y_test,prediction)
+# cm = testing.singleLabelConfusionMatrix(y_test,prediction)
 
 # ROC Curve
 # Initializing thresholds
