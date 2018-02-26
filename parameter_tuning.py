@@ -4,6 +4,8 @@ import neural_network_testing as testing
 from keras import optimizers
 import numpy as np
 import pandas as pd
+from numpy import trapz
+import matplotlib.pyplot as plt
 
 ### Investigating different learning rate decays ###
 
@@ -35,13 +37,16 @@ X_train, X_test, y_train, y_test = training.split(X,y)
 X_train,X_test,sc = training.normalize(X_train,X_test)
 
 # Initializing different layers
-# layers = np.arange(1,10)
+layers = np.arange(1,5)
 
 # Initializing different units
-# units = np.arange(100,1000,100)
+units = np.arange(100,1000,100)
 
 # Initializing different learning rates
 # rate = 0.01
+
+# Initializing different epochs
+epochs = np.arange(5,50,5)
 
 # Initializing variable to store ROC Data
 ROC_Data = []
@@ -50,33 +55,79 @@ ROC_Data = []
 history_data = []
 
 # Trying different parameters
-# for rate in learning_rate:
+ # sgd = optimizers.SGD(lr=rate)
 
-    # # sgd = optimizers.SGD(lr=rate)
-    #
-    # # Initializing parameters for neural network
-    # parameters = training.create_paramaters(units=100, layers=3, initializer='uniform',
-    #                                         validation_split=0, activation='sigmoid',
-    #                                         optimizer='adam', epochs=10)
-    #
-    # # Training neural network
-    # classifier, history = training.neural_network(X_train,y_train,parameters)
-    #
-    # history_data.append(history)
-    #
-    # ### Testing ###
-    # # ROC Curve
-    # # Initializing thresholds
-    # thresholds = np.arange(0.1, 1, 0.02)
-    #
-    # # Generating ROC data
-    # roc = testing.ROC(classifier, X_test, y_test, thresholds)
-    #
-    # # Generating ROC column
-    # roc['Learning Rate'] = rate*len(thresholds)
-    #
-    # if len(ROC_Data) == 0:
-    #     ROC_Data = roc
-    # else:
-    #     ROC_Data = pd.concat([ROC_Data,roc],axis=0)
+for epoch in epochs:
+# Initializing parameters for neural network
+    parameters = training.create_paramaters(input_dim=1024,units=100,layers=3,initializer='uniform',
+                                        validation_split=0,activation='sigmoid',output_activation='sigmoid',
+                                        optimizer='adam',batch=1000, epochs=epoch)
 
+    # Training neural network
+    classifier, history = training.neural_network(X_train,y_train,parameters)
+
+    history_data.append(history)
+
+    ### Testing ###
+    # ROC Curve
+    # Initializing thresholds
+    thresholds = np.arange(0.1, 1, 0.02)
+
+    # Generating ROC data
+    roc = testing.ROC(classifier, X_test, y_test, thresholds)
+
+    # Generating ROC column
+    # roc['Units'] = [unit]*len(thresholds)
+    # roc['Layers'] = [layer]*len(thresholds)
+    roc['Epochs'] = [epoch]*len(thresholds)
+
+    if len(ROC_Data) == 0:
+        ROC_Data = roc
+    else:
+        ROC_Data = pd.concat([ROC_Data,roc],axis=0)
+
+
+# Converting ROC_Data into dictionary with normalized Area Under ROC Data
+thresh = len(thresholds)
+area = []
+for item in range(len(layers)*len(units)):
+
+    info = {}
+    begin = item*thresh
+    end = (item+1)*thresh
+    FPR = ROC_Data['FPR'].iloc[begin:end]
+    TPR = ROC_Data['TPR'].iloc[begin:end]
+    FPR = FPR[::-1]
+    TPR = TPR[::-1]
+    info['layers'] = ROC_Data['Layers'].iloc[begin]
+    info['units'] = ROC_Data['Units'].iloc[begin]
+    info['area'] = trapz(TPR,x=FPR)/(max(TPR)*max(FPR))
+    info['accuracy'] = history_data[item].acc
+    info['losses'] = history_data[item].losses
+    area.append(info)
+
+# Plotting scatter plot of units, layers and normalized area under ROC
+x=[]
+y=[]
+z=[]
+for item in area:
+
+    x.append(item['layers'])
+    y.append(item['units'])
+    z.append(item['area'])
+
+plt.scatter(x=x,y=y,c=z)
+
+# Plotting ROC
+thresh = len(thresholds)
+area = []
+
+for item in range(len(epochs)):
+
+    info = {}
+    begin = item*thresh
+    end = (item+1)*thresh
+
+    FPR = ROC_Data['FPR'].iloc[begin:end]
+    TPR = ROC_Data['TPR'].iloc[begin:end]
+    plt.plot(FPR,TPR,label='Epochs ' + str(epochs[item]))

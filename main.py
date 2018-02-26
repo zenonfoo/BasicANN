@@ -32,15 +32,15 @@ X_train,X_test,sc = training.normalize(X_train,X_test)
 
 # Initializing parameters for neural network
 parameters = training.create_paramaters(units=100,layers=3,initializer='uniform',
-                                        validation_split=0.1,activation='sigmoid',
-                                        optimizer='adam',batch=5000,epochs=25)
+                                        validation_split=0,activation='tanh',output_activation='sigmoid',
+                                        optimizer='adam',batch=1000,epochs=10)
 
 # Training Neural Network
 classifier,history = training.neural_network(X_train,y_train,parameters)
 
 ### Testing ###
 # Prediction
-prediction = testing.assessSingleClassModel(classifier,X_test)
+# prediction = testing.assessSingleClassModel(classifier,X_test)
 
 # Confusion Matrix
 # cm = testing.singleLabelConfusionMatrix(y_test,prediction)

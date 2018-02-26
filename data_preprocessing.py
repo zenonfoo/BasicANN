@@ -295,6 +295,7 @@ def convert_grid(data,gridlength,orginial_data,dimensionalized_data,raman_length
 
     return data,row
 
+# Inserts label for centre classification for each row of data, where each row represents data from a square grid
 def obtainLabel(data,label,gridlength):
 
     # Because the grid will always be square the centres for the row and column will be the same
@@ -311,7 +312,6 @@ def obtainLabel(data,label,gridlength):
                 counter += 1
 
     return data
-
 
 # Main function for obtaining data in the grid format
 def obtainGridData(label, raman, gridlength):
@@ -347,6 +347,6 @@ def obtainGridData(label, raman, gridlength):
     return data
 
 # Saving Data
-# np.save('BCC_Data_4',data)
-# np.save('Tissues_Used_4',tissues_used)
-# np.save('Keys_Used_4',keys_used)
+# np.save('BCC_Data_3',data)
+# np.save('Tissues_Used_3',tissues_used)
+# np.save('Keys_Used_Gird',keys_used)

@@ -88,14 +88,16 @@ class History(keras.callbacks.Callback):
         self.losses.append(logs.get('loss'))
         self.acc.append(logs.get('acc'))
 
-def create_paramaters(units,layers,initializer,validation_split,activation,optimizer,batch,epochs):
+def create_paramaters(input_dim,units,layers,initializer,validation_split,activation,output_activation,optimizer,batch,epochs):
 
     parameters = {}
+    parameters['input_dimension'] = input_dim
     parameters['units'] = units
     parameters['layers'] = layers
     parameters['initializer'] = initializer
     parameters['validation_split'] = validation_split
     parameters['activation'] = activation
+    parameters['output_activation'] = output_activation
     parameters['optimizer'] = optimizer
     parameters['batch'] = batch
     parameters['epochs'] = epochs
@@ -118,7 +120,7 @@ def neural_network(X_train, y_train, parameters):
         if layer == 0:
             # kernel_initializer refers to inital weights
             classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
-                                 activation=parameters['activation'], input_dim=1024))
+                                 activation=parameters['activation'], input_dim=parameters['input_dimension']))
 
         else:
             classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
