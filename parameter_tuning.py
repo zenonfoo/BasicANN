@@ -26,14 +26,17 @@ X = data[:, :-1]
 y = data[:, -1]
 
 # Loading Data if data is already saved
+print('Loading Data')
 folder_name = 'BCC&NoBCC_Classification/2/BCC_Data_2.npy'
 data,X,y = training.import_data(folder_name)
 
 # Splitting dataset into training and test set
+print('Splitting Data')
 X_train, X_test, y_train, y_test = training.split(X,y)
 
 # Feature Scaling
 # sc variable is to be used later on to fit testing data
+print('Normalizing Data')
 X_train,X_test,sc = training.normalize(X_train,X_test)
 
 # Initializing different layers
@@ -128,6 +131,38 @@ for item in range(len(epochs)):
     begin = item*thresh
     end = (item+1)*thresh
 
-    FPR = ROC_Data['FPR'].iloc[begin:end]
-    TPR = ROC_Data['TPR'].iloc[begin:end]
-    plt.plot(FPR,TPR,label='Epochs ' + str(epochs[item]))
+    if ROC_Data['Epochs'].iloc[begin] == 10:
+        FPR = ROC_Data['FPR'].iloc[begin:end]
+        TPR = ROC_Data['TPR'].iloc[begin:end]
+        plt.plot(FPR,TPR,label='Epochs ' + str(epochs[item]))
+
+plt.close()
+plt.close()
+plt.close()
+plt.close()
+
+fig, ax = plt.subplots()
+counter = 1
+for label, df in temp.groupby('layers'):
+    df.plot('units', 'area', ax=ax, label='Layers: ' + str(counter))
+    counter += 1
+plt.legend()
+
+
+# Converting ROC_Data into dictionary with normalized Area Under ROC Data
+thresh = len(thresholds)
+info = {}
+info['layers'] = []
+info['units'] = []
+info['area'] = []
+for item in range(len(layers)*len(units)):
+
+    begin = item*thresh
+    end = (item+1)*thresh
+    FPR = temp['FPR'].iloc[begin:end]
+    TPR = temp['TPR'].iloc[begin:end]
+    FPR = FPR[::-1]
+    TPR = TPR[::-1]
+    info['layers'].append(temp['Layers'].iloc[begin])
+    info['units'].append(temp['Units'].iloc[begin])
+    info['area'].append(trapz(TPR,x=FPR)/(max(TPR)*max(FPR)))

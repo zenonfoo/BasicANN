@@ -67,7 +67,7 @@ def split(X,y):
 
     return X_train, X_test, y_train, y_test
 
-#Feature Scaling
+# Feature Scaling
 def normalize(X_train,X_test):
 
     from sklearn.preprocessing import StandardScaler
@@ -77,6 +77,15 @@ def normalize(X_train,X_test):
 
     return X_train,X_test,sc
 
+# Constructing eigenvalues and eigenvectors
+def eigen(X_train):
+
+    cov_mat = np.cov(X_train.T)
+    eigen_vals, eigen_vectors = np.linalg.eig(cov_mat)
+
+    return eigen_vals, eigen_vectors
+
+# Constructing History class to store data on accuracy and losses as the network trains
 import keras
 
 class History(keras.callbacks.Callback):
@@ -88,6 +97,7 @@ class History(keras.callbacks.Callback):
         self.losses.append(logs.get('loss'))
         self.acc.append(logs.get('acc'))
 
+# Creating parameters to be used as argument during calling of the training function
 def create_paramaters(input_dim,units,layers,initializer,validation_split,activation,output_activation,optimizer,batch,epochs):
 
     parameters = {}
@@ -110,6 +120,7 @@ def neural_network(X_train, y_train, parameters):
     # Making the ANN
     from keras.models import Sequential
     from keras.layers import Dense
+    from keras.layers import Dropout
 
     # Initializing the ANN
     classifier = Sequential()
@@ -121,10 +132,12 @@ def neural_network(X_train, y_train, parameters):
             # kernel_initializer refers to inital weights
             classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
                                  activation=parameters['activation'], input_dim=parameters['input_dimension']))
+            classifier.add(Dropout(rate=0.2))
 
         else:
             classifier.add(Dense(units=parameters['units'], kernel_initializer=parameters['initializer'],
                                  activation=parameters['activation']))
+            classifier.add(Dropout(rate=0.2))
 
     # Adding output layer
     classifier.add(Dense(units=1, kernel_initializer=parameters['initializer'],
