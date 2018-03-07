@@ -52,7 +52,7 @@ def getImage(fileNumber):
 
     return label_map,RamanMap
 
-# Returns a labelled array
+# Returns a labelled array using the trained algorithm to predict
 def labelImage(classifier,raman_image,threshold):
 
     predicted_image = np.zeros((raman_image.shape[1],raman_image.shape[2]))

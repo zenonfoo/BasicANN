@@ -217,8 +217,13 @@ def initalizeMatrix(label):
 
     row_size = 0
 
-    for item in range(len(label)):
-        row_size += label[item].shape[0] * label[item].shape[1]
+    if type(label) is list:
+        for item in range(len(label)):
+            row_size += label[item].shape[0] * label[item].shape[1]
+
+    # This is the condition that there is only one matrix
+    else:
+        row_size = label.shape[0] * label.shape[1]
 
     return row_size
 
@@ -227,17 +232,30 @@ def organiseData(label,raman):
 
     row_size = initalizeMatrix(label)
     data = np.zeros((row_size,1025))
+    data_shape = []
     counter = 0
 
-    for item in range(len(label)):
-        for row in range(label[item].shape[0]):
-            for column in range(label[item].shape[1]):
+    if type(label) is list:
 
-                data[counter,:-1] = raman[item][:, row, column]
-                data[counter,-1] = label[item][row, column]
+        for item in range(len(label)):
+            data_shape.append(label[item].shape)
+            for row in range(label[item].shape[0]):
+                for column in range(label[item].shape[1]):
+
+                    data[counter,:-1] = raman[item][:, row, column]
+                    data[counter,-1] = label[item][row, column]
+                    counter += 1
+
+    else:
+
+        data_shape = label.shape
+        for row in range(label.shape[0]):
+            for column in range(label.shape[1]):
+                data[counter, :-1] = raman[:, row, column]
+                data[counter, -1] = label[row, column]
                 counter += 1
 
-    return data
+    return data,data_shape
 
 # Function that returns the number of grids within the data, given the grid size of data that we want
 def initializeGrid(label,gridlength):
@@ -314,7 +332,8 @@ def obtainLabel(data,label,gridlength):
     return data
 
 # Main function for obtaining data in the grid format
-def obtainGridData(label, raman, gridlength):
+def obtainNonOverlapGridData(label, raman, gridlength):
+
     row_size = initializeGrid(label, gridlength)
 
     # Initializing memory to store our input data for out network
@@ -346,6 +365,98 @@ def obtainGridData(label, raman, gridlength):
 
     return data
 
+def obtainOverlapGridData(label,raman,gridlength):
+
+    # Initializing row size
+    row_size = 0
+
+    if type(label) is list:
+
+        for item in label:
+            row_size += (item.shape[0] - gridlength + 1) * (item.shape[1] - gridlength + 1)
+
+    else:
+
+        row_size += (label.shape[0] - gridlength + 1) * (label.shape[1] - gridlength + 1)
+
+    data = np.zeros([row_size,1024*(gridlength**2)+1])
+
+    row_counter = 0
+
+    if type(label) is list:
+        for (temp_label,temp_raman) in zip(label,raman):
+            for row in range(temp_label.shape[0]-gridlength+1):
+                for column in range(temp_label.shape[1]-gridlength+1):
+
+                    column_counter = 0
+
+                    for inner_row in range(gridlength):
+                        for inner_column in range(gridlength):
+
+                            data[row_counter,column_counter*1024:(column_counter+1)*1024] = temp_raman[:,row+inner_row,column+inner_column]
+                            column_counter += 1
+
+                            if column_counter == np.ceil(gridlength/2):
+                                data[row_counter,-1] = temp_label[row+inner_row,column+inner_column]
+
+                    row_counter += 1
+
+    else:
+        for row in range(label.shape[0] - gridlength + 1):
+            for column in range(label.shape[1] - gridlength + 1):
+
+                column_counter = 0
+
+                for inner_row in range(gridlength):
+                    for inner_column in range(gridlength):
+
+                        data[row_counter,column_counter*1024:(column_counter+1)*1024] = raman[:,row+inner_row,column+inner_column]
+                        column_counter += 1
+
+                        if column_counter == np.ceil(gridlength/2):
+                            data[row_counter, -1] = label[row+inner_row,column+inner_column]
+
+                row_counter += 1
+
+    return data
+
+# Coverts data back to 2D data back to list of 3D data
+def revert(raman,data_shape):
+
+
+    data = []
+    counter = 0
+
+    if type(data_shape) is list:
+        for item in data_shape:
+
+            num_row = item[0]
+            num_column = item[1]
+
+            temp = np.zeros((1024,num_row,num_column))
+
+            for row in range(item[0]):
+                for column in range(item[1]):
+                    temp[:,row,column] = raman[counter,:]
+                    counter += 1
+
+            data.append(temp)
+
+    else:
+
+        num_row = data_shape[0]
+        num_column = data_shape[1]
+
+        temp = np.zeros((1024, num_row, num_column))
+
+        for row in range(data_shape[0]):
+            for column in range(data_shape[1]):
+                temp[:, row, column] = raman[counter, :]
+                counter += 1
+
+        data.append(temp)
+
+    return data
 # Saving Data
 # np.save('BCC_Data_3',data)
 # np.save('Tissues_Used_3',tissues_used)
