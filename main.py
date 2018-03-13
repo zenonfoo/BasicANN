@@ -11,46 +11,6 @@ label = 'bcc'
 # Loading Data
 label_data,raman_data,tissues_used = preprocess.preProcessBCC(folder_name=folder,testing_label=label)
 
-# Excluding one image for testing while the rest is used for
-X_label = label_data[:-1]
-X_raman = raman_data[:-1]
-y_label = label_data[-1]
-y_raman = raman_data[-1]
-
-# Organising Data Into 2D Matrix
-print('Organising Data Into 2D Matrix')
-X,data_shape_X = preprocess.organiseData(X_label,X_raman)
-y,data_shape_y = preprocess.organiseData(y_label,y_raman)
-
-# Feature Scaling
-print('Normalizing Data')
-X_train,X_test,sc = training.normalize(X[:,:-1],y[:,:-1])
-
-# Reverting back to list of 3D matrix form
-print('Reverting')
-new_X_raman = preprocess.revert(X_train,data_shape_X)
-new_y_raman = preprocess.revert(X_test,data_shape_y)
-new_y_raman = new_y_raman[0]
-
-# Deleting variables to reduce RAM load
-del label_data
-del raman_data
-del tissues_used
-del X
-del y
-del data_shape_X
-del data_shape_y
-del X_train
-del X_test
-del X_raman
-del y_raman
-
-# Obtaining Grid Data
-print('Obtaining Grid Data')
-non_overlap_X = preprocess.obtainNonOverlapGridData(X_label,new_X_raman,3)
-overlap_X = preprocess.obtainOverlapGridData(X_label,new_X_raman,3)
-overlap_y = preprocess.obtainOverlapGridData(y_label,new_y_raman,3)
-
 ### Training ###
 # Loading Data if data is already saved
 print('Loading Data')

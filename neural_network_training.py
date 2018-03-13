@@ -1,6 +1,7 @@
 ## Training Neural Network fo classifying BCC and non BCC cells
 
 import numpy as np
+import data_preprocessing as preprocess
 
 folder_name = 'BCC&NoBCC_Classification/2/BCC_Data_2.npy'
 
@@ -57,6 +58,36 @@ def encode(y):
 
     from keras.utils import np_utils
     return np_utils.to_categorical(y)
+
+# Preprocesses data
+def gridPreprocessing(label_data,raman_data):
+
+    # Excluding one image for testing while the rest is used for
+    X_label = label_data[:-1]
+    X_raman = raman_data[:-1]
+    y_label = label_data[-1]
+    y_raman = raman_data[-1]
+
+    # Organising Data Into 2D Matrix
+    print('Organising Data Into 2D Matrix')
+    X, data_shape_X = preprocess.organiseData(X_label, X_raman)
+    y, data_shape_y = preprocess.organiseData(y_label, y_raman)
+
+    # Feature Scaling
+    print('Normalizing Data')
+    X_train, X_test, sc = normalize(X[:, :-1], y[:, :-1])
+
+    # Reverting back to list of 3D matrix form
+    print('Reverting')
+    training_image_data = preprocess.revert(X_train, data_shape_X)
+    testing_image_data = preprocess.revert(X_test, data_shape_y)
+
+    # Obtaining Grid Data
+    print('Obtaining Grid Data')
+    overlap_X = preprocess.obtainOverlapGridData(X_label, training_image_data, 3)
+    overlap_y = preprocess.obtainOverlapGridData(y_label, testing_image_data, 3)
+
+    return overlap_X,overlap_y
 
 # Splitting dataset into training and test set
 def split(X,y):
