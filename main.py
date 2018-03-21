@@ -19,7 +19,8 @@ data,X,y = training.import_data(folder_name)
 
 # Splitting dataset into training and test set
 print('Splitting Data')
-X_train, X_test, y_train, y_test = training.split(X,y)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.1,stratify=y)
 
 # Feature Scaling
 # sc variable is to be used later on to fit testing data

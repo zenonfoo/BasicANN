@@ -1,216 +1,6 @@
-### Data Extraction for BCC and non BCC ###
-import h5py
+### Data Preprocessing for BCC and non BCC ###
+
 import numpy as np
-import pandas as pd
-
-pd.set_option('display.width',320)
-
-folder_name = './RamanData/tissue_'
-
-# Finding the unique keys for all the tissue files -  to identify callable keys when pre-processing data
-def findUniqueKeys(folder_name):
-
-    unique_keys = []
-
-    for x in range(3,72):
-
-        # For the tissues with only a single task
-        try:
-            mat = h5py.File(folder_name + str(x) + '.mat')
-
-            for item in list(mat.keys()):
-                unique_keys.append(item)
-
-        except OSError:
-            print(x, 'OSError')
-
-        except KeyError:
-            print(x, 'KeyError')
-
-        # For the tissues with multiple task
-        try:
-
-            for y in range(1,3):
-                mat = h5py.File(folder_name + str(x) + '.mat')
-
-                for item in list(mat.keys()):
-                    unique_keys.append(item)
-
-        except OSError:
-            print(x, y, 'OSError')
-
-        except KeyError:
-            print(x, y, 'KeyError')
-
-    return np.unique(unique_keys)
-
-# Given an input key, this function will return the tissues which contain that key
-def findTissue(folder_name,key):
-
-    tissue = []
-
-    for x in range(3,72):
-
-        try:
-            mat = h5py.File(folder_name + str(x) + '.mat')
-
-            if key in list(mat.keys()):
-                tissue.append()
-
-        except OSError:
-            print(x, 'OSError')
-
-        except KeyError:
-            print(x, 'KeyError')
-
-    return tissue
-
-# This function converts the ones in the matrix to the index - to be one hot encoded later
-def convert(matrix,index):
-
-    for x in range(matrix.shape[0]):
-        for y in range(matrix.shape[1]):
-            if matrix[x,y] == 1:
-                matrix[x,y] = index
-
-    return matrix
-
-# Returns 3 lists - Map of labels indicated , Raman Data, Tissues Used
-# Map of label - in the form of a list of 2D matrices
-# Raman Data - in the form of a list of 3D matrices
-def preProcessAllLabels(folder_name):
-
-    # Initializing variables
-    known_labels = ['bcc','dermis','fat','epi']
-    label = []
-    RamanData = []
-    tissues_used = []
-
-    for x in range(3, 72):
-
-        for y in range(0,3):
-
-            if y == 0:
-                folder_number = str(x)
-
-            else:
-                folder_number = str(x) + '_' + str(y)
-
-        try:
-            # Opening file and obtaining keys
-            mat = h5py.File(folder_name + folder_number + '.mat')
-            keys = list(mat.keys())
-
-            # Checking just for BCC data in all the files
-            present_labels = [item for item in keys if item in known_labels]
-
-            if present_labels:
-
-                label_map = np.zeros(mat[present_labels[0]].shape)
-
-                for key in present_labels:
-
-                    if key == 'bcc':
-
-                        temp = convert(np.array(mat[key]), 1)
-                        label_map = label_map + temp
-
-                    elif key == 'dermis':
-
-                        temp = convert(np.array(mat[key]),2)
-                        label_map = label_map + temp
-
-                    elif key == 'fat':
-
-                        temp = convert(np.array(mat[key]),3)
-                        label_map = label_map + temp
-
-                    elif key == 'epi':
-
-                        temp = convert(np.array(mat[key]),4)
-                        label_map = label_map + temp
-
-                RamanMap = np.array(mat['map_t' + folder_number])
-
-            else:
-                continue
-
-            # Cheking for dimension mismatch
-            # If there is no dimension mismatch organise data to be raman input and BCC/NonBCC cell output
-            if label_map.shape[0] == RamanMap.shape[1] and label_map.shape[1] == RamanMap.shape[2]:
-                label.append(label_map)
-                RamanData.append(RamanMap)
-                tissues_used.append(folder_number)
-
-        except OSError:
-            print(x, OSError)
-
-        # This is due to the tissue not having any of the keys
-        except KeyError:
-            print(x, KeyError)
-
-        except IndexError:
-            print(x, IndexError)
-
-        # This error is due to different keys having different shapes
-        except ValueError:
-            print(x, ValueError)
-
-    return label, RamanData, tissues_used
-
-
-# This is for the tissues with multiple tasks
-# Returns 3 lists - Map of Label, Raman Data, Tissues Used
-# Map of Label - in the form of a list of 2D matrices
-# Raman Data - in the form of a list of 3D matrices
-def preProcessBCC(folder_name,testing_label):
-
-    # Initializing variables
-    label = []
-    RamanData = []
-    tissues_used = []
-
-    for x in range(3, 72):
-
-        for y in range(0,3):
-
-            if y == 0:
-                folder_number = str(x)
-
-            else:
-                folder_number = str(x) + '_' + str(y)
-
-            try:
-                # Opening file and obtaining keys
-                mat = h5py.File(folder_name + folder_number +'.mat')
-                keys = list(mat.keys())
-
-                # Checking just for BCC data in all the files
-                if testing_label in keys:
-                    label_map = np.array(mat[testing_label])
-                    RamanMap = np.array(mat['map_t' + folder_number])
-
-                else:
-                    continue
-
-                # Cheking for dimension mismatch
-                # If there is no dimension mismatch organise data to be raman input and BCC/NonBCC cell output
-                if label_map.shape[0] == RamanMap.shape[1] and label_map.shape[1] == RamanMap.shape[2]:
-                    label.append(label_map)
-                    RamanData.append(RamanMap)
-                    tissues_used.append(folder_number)
-
-            except OSError:
-                print(x, 'OSError')
-
-            except KeyError:
-                print(x, 'KeyError')
-
-            except IndexError:
-                print(x, 'IndexError')
-
-    return label, RamanData, tissues_used
-
 
 # Looks at the dimensions of each tissue data to initialize matrix to store them in one variable
 def initalizeMatrix(label):
@@ -257,209 +47,79 @@ def organiseData(label,raman):
 
     return data,data_shape
 
-# Function that returns the number of grids within the data, given the grid size of data that we want
-def initializeGrid(label,gridlength):
+# Separating data - with the main goal of normalizing the dataset w.r.t only the non-bcc raman data
+def separateBCC(data):
 
-    num_of_grids = 0
+    # Number of rows in data
+    row_data = data.shape[0]
 
-    for item in range(len(label)):
-        num_of_grids += (label[item].shape[0]//gridlength) * (label[item].shape[1]//gridlength)
+    # Counting and summing number of bcc elements
+    count_bcc = [1 for item in range(row_data) if data[item,-1] == 1]
+    sum_bcc = sum(count_bcc)
 
-    return num_of_grids
+    # Initializing store for bcc and non bcc data
+    bcc_store = np.empty([sum_bcc,1025])
+    non_bcc_store = np.empty([row_data-sum_bcc,1025])
 
-# Cut off edges so that we only get complete grid sizes
-def cut_off(label,raman,gridlength):
+    # bcc and nonbcc counters
+    bcc_counter = 0
+    non_bcc_counter = 0
 
-    cut_label = []
-    cut_raman = []
+    # Separating Data
+    for item in range(row_data):
 
-    for item in label:
-        cut_label.append(item[:(item.shape[0]//gridlength)*gridlength,:(item.shape[1]//gridlength)*gridlength])
-
-    for item in raman:
-        cut_raman.append(item[:,:(item.shape[1]//gridlength)*gridlength,:(item.shape[2]//gridlength)*gridlength])
-
-    return cut_label,cut_raman
-
-# Convert the image data into a form where each row contains raman sepctra with one grid, where the
-# centre grid is the label to be classified
-def convert_grid(data,gridlength,orginial_data,dimensionalized_data,raman_length,row,column_index):
-
-    current_row = row
-
-    # For each raman data we have that have been stretched out into 2D
-    for column in range(dimensionalized_data.shape[1]):
-
-        data[row, column_index:column_index + raman_length] = dimensionalized_data[:, column]
-
-        # If you've finished one row of grid shaped data
-        if (column + 1) % (gridlength * orginial_data.shape[2]) == 0:
-            row += 1
-            column_index = 0
-            current_row = row
-
-        # If I reach the column length of the image
-        elif (column + 1) % orginial_data.shape[2] == 0:
-            row = current_row
-            column_index += raman_length
-
-        # If I reach the grid length
-        elif (column + 1) % gridlength == 0:
-            row += 1
-            column_index = column_index - ((gridlength-1)*raman_length)
+        if data[item,-1] == 1:
+            bcc_store[bcc_counter,:] = data[item,:]
+            bcc_counter += 1
 
         else:
-            column_index += raman_length
+            non_bcc_store[non_bcc_counter,:] = data[item,:]
+            non_bcc_counter += 1
 
-    return data,row
+    return bcc_store[:,:-1],non_bcc_store[:,:-1]
 
-# Inserts label for centre classification for each row of data, where each row represents data from a square grid
-def obtainLabel(data,label,gridlength):
+def separateAll(data):
 
-    # Because the grid will always be square the centres for the row and column will be the same
-    first_centre_index = gridlength//2
-    counter = 0
+    # Number of rows in data
+    row_data = data.shape[0]
 
-    for item in label:
-        horz_centre = np.arange(first_centre_index,item.shape[0],gridlength)
-        vert_centre = np.arange(first_centre_index,item.shape[1],gridlength)
+    # Finding number of labels
+    no_labels = int(max(data[:,-1]) + 1)
 
-        for row in horz_centre:
-            for column in vert_centre:
-                data[counter,-1] = item[row,column]
-                counter += 1
+    # Initializing counter for all labels
+    counter = np.zeros((1,no_labels))
 
-    return data
+    # Counting labels
+    for item in range(row_data):
+        counter[0,int(data[item,-1])] += 1
 
-# Main function for obtaining data in the grid format
-def obtainNonOverlapGridData(label, raman, gridlength):
+    # Initializing memory to store different label
+    label_store = {}
 
-    row_size = initializeGrid(label, gridlength)
+    for item in range(no_labels):
+        label_store[item] = np.zeros((int(counter[0,item]),1024))
 
-    # Initializing memory to store our input data for out network
-    data = np.zeros((row_size, 1024 * (gridlength ** 2) + 1))
+    # Separating Data
+    label_counter = np.zeros((1,no_labels))
 
-    # Cut off excess image
-    label, raman = cut_off(label, raman, gridlength)
+    for item in range(row_data):
+        label_store[int(data[item,-1])][int(label_counter[0,int(data[item,-1])]),:] = data[item,:-1]
+        label_counter[0, int(data[item,-1])] += 1
 
-    # Initializing variable
-    varying_row = 0
-
-    # For each image that we have
-    for item in raman:
-
-        # Reduce by one dimension
-        temp = item.reshape(1024,item.shape[1]*item.shape[2])
-
-        # Initialize variable
-        raman_length = 1024
-        row = varying_row
-        column_index = 0
-
-        # Converting data to a form where it can be used as an input for the neural network
-        data,varying_row = convert_grid(data,gridlength,item,temp,raman_length,row,column_index)
-
-        # Providing the label of the centre grid for
-
-    data = obtainLabel(data,label,gridlength)
-
-    return data
-
-def obtainOverlapGridData(label,raman,gridlength):
-
-    # Initializing row size
-    row_size = 0
-
-    if type(label) is list:
-
-        for item in label:
-            row_size += (item.shape[0] - gridlength + 1) * (item.shape[1] - gridlength + 1)
-
-    else:
-
-        row_size += (label.shape[0] - gridlength + 1) * (label.shape[1] - gridlength + 1)
-
-    data = np.zeros([row_size,1024*(gridlength**2)+1])
-
-    row_counter = 0
-
-    if type(label) is list:
-        for (temp_label,temp_raman) in zip(label,raman):
-            for row in range(temp_label.shape[0]-gridlength+1):
-                for column in range(temp_label.shape[1]-gridlength+1):
-
-                    column_counter = 0
-
-                    for inner_row in range(gridlength):
-                        for inner_column in range(gridlength):
-
-                            data[row_counter,column_counter*1024:(column_counter+1)*1024] = temp_raman[:,row+inner_row,column+inner_column]
-                            column_counter += 1
-
-                            if column_counter == np.ceil(gridlength/2):
-                                data[row_counter,-1] = temp_label[row+inner_row,column+inner_column]
-
-                    row_counter += 1
-
-    else:
-        for row in range(label.shape[0] - gridlength + 1):
-            for column in range(label.shape[1] - gridlength + 1):
-
-                column_counter = 0
-
-                for inner_row in range(gridlength):
-                    for inner_column in range(gridlength):
-
-                        data[row_counter,column_counter*1024:(column_counter+1)*1024] = raman[:,row+inner_row,column+inner_column]
-                        column_counter += 1
-
-                        if column_counter == np.ceil(gridlength/2):
-                            data[row_counter, -1] = label[row+inner_row,column+inner_column]
-
-                row_counter += 1
-
-    return data
-
-# Coverts data back to 2D data back to list of 3D data
-def revert(raman,data_shape):
+    return label_store
 
 
-    data = []
-    counter = 0
+# Counts the number of each label within the dataset
+def count(labels):
 
-    if type(data_shape) is list:
-        for item in data_shape:
+    label_counter = {}
 
-            num_row = item[0]
-            num_column = item[1]
+    for item in labels:
+        if item not in label_counter:
+            label_counter[item] = 1
 
-            temp = np.zeros((1024,num_row,num_column))
+        else:
+            label_counter[item] += 1
 
-            for row in range(item[0]):
-                for column in range(item[1]):
-                    temp[:,row,column] = raman[counter,:]
-                    counter += 1
+    return label_counter
 
-            data.append(temp)
-
-    else:
-
-        num_row = data_shape[0]
-        num_column = data_shape[1]
-
-        temp = np.zeros((1024, num_row, num_column))
-
-        for row in range(data_shape[0]):
-            for column in range(data_shape[1]):
-                temp[:, row, column] = raman[counter, :]
-                counter += 1
-
-        data.append(temp)
-
-    return data
-
-
-# Saving Data
-# np.save('BCC_Data_3',data)
-# np.save('Tissues_Used_3',tissues_used)
-# np.save('Keys_Used_Gird',keys_used)
