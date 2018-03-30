@@ -1,3 +1,4 @@
+## Polynomial Baseline Correction ##
 import numpy as np
 
 # Returns polynomial fitted datapoints
@@ -19,7 +20,7 @@ def polynomial(data):
     # Obtaining coefficients
     for item in range(row_length):
 
-        coeff[item,:] = np.polyfit(x,data[row_length,:])
+        coeff[item,:] = np.polyfit(x,data[item,:],2)
 
     # Calculating datapoints
     for item in range(col_length):
@@ -29,5 +30,7 @@ def polynomial(data):
         third_coeff = coeff[:,2]
 
         datapoints[:,item] = first_coeff + second_coeff + third_coeff
+
+    datapoints = data - datapoints
 
     return datapoints

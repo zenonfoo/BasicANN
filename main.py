@@ -1,6 +1,7 @@
 import neural_network_testing as testing
 import neural_network_training as training
 import data_preprocessing as preprocess
+import obtaining_data as obtain
 import numpy as np
 
 ### Preprocessing Data ###
@@ -9,12 +10,12 @@ folder = './RamanData/tissue_'
 label = 'bcc'
 
 # Loading Data
-label_data,raman_data,tissues_used = preprocess.preProcessBCC(folder_name=folder,testing_label=label)
+label_data,raman_data,tissues_used = obtain.preProcessBCC(folder_name=folder,testing_label=label)
 
 ### Training ###
 # Loading Data if data is already saved
 print('Loading Data')
-folder_name = 'BCC&NoBCC_Classification/2/Point_Test/BCC_Data_2.npy'
+folder_name = 'BCC&NoBCC_Classification/4/BCC_Data_4.npy'
 data,X,y = training.import_data(folder_name)
 
 # Splitting dataset into training and test set

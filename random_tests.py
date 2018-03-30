@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 import neural_network_training as training
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-from random import randint
+
 
 # Loading Data if data
 print('Loading Data')
@@ -43,6 +43,8 @@ for count in range(1,10):
 
 
 # ### Plotting Random Things ###
+# import matplotlib.pyplot as plt
+# from random import randint
 # labels = ['None','BCC','Dermis','Fat','Epi','Dye']
 # for item in range(6):
 #
@@ -58,3 +60,14 @@ for count in range(1,10):
 #         plt.grid()
 
 
+### Baseline Correction - Polyfitting
+import data_preprocessing_baseline_correction as baseCorrection
+import neural_network_training as training
+
+# Loading Data if data is already saved
+print('Loading Data')
+folder_name = 'BCC&NoBCC_Classification/4/BCC_Data_4.npy'
+data,X,y = training.import_data(folder_name)
+
+print('Obtaining Datapoints')
+datapoints = baseCorrection.polynomial(X)
