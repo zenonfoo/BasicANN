@@ -3,6 +3,7 @@ from sklearn.decomposition import PCA
 import neural_network_training as training
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # Loading Data if data
@@ -45,10 +46,10 @@ for count in range(1,10):
 # ### Plotting Random Things ###
 # import matplotlib.pyplot as plt
 # from random import randint
-# labels = ['None','BCC','Dermis','Fat','Epi','Dye']
-# for item in range(6):
+# # labels = ['None','BCC','Dermis','Fat','Epi','Dye']
+# for item in range(9):
 #
-#     plt.subplot(2,3,item+1)
+#     plt.subplot(3,3,item+1)
 #
 #         for num in range(100):
 #
@@ -56,7 +57,7 @@ for count in range(1,10):
 #
 #             plt.plot(label[item][temp,:])
 #
-#         plt.title(labels[item])
+#         # plt.title(labels[item])
 #         plt.grid()
 
 
@@ -71,3 +72,22 @@ data,X,y = training.import_data(folder_name)
 
 print('Obtaining Datapoints')
 datapoints = baseCorrection.polynomial(X)
+
+from pylab import bone,pcolor,colorbar,plot,show
+for i in range(6):
+
+    temp = np.zeros(40000)
+
+    for j in range(40000):
+
+        if wanted_data[j] == i:
+            temp[j] = 1
+        else:
+            temp[j] = 0
+
+    temp = temp.reshape(200,200)
+    temp = np.rot90(temp)
+
+    plt.subplot(2,3,i+1)
+    plt.pcolor(temp)
+    colorbar()
