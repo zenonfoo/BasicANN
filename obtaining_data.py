@@ -3,6 +3,15 @@
 import numpy as np
 import h5py
 
+# Finding Specific Tissue
+def findSpecificTissue(folder_name,tissue,testing_label):
+
+    data = h5py.File(folder_name + tissue + '.mat')
+    label_map = np.array(data[testing_label])
+    RamanMap = np.array(data['map_t' + tissue])
+
+    return label_map,RamanMap
+
 # Finding the unique keys for all the tissue files -  to identify callable keys when pre-processing data
 def findUniqueKeys(folder_name):
 

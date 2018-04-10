@@ -15,7 +15,7 @@ sc = MinMaxScaler()
 X = sc.fit_transform(X)
 
 # Initializing the size of the grid for the SOM and the number features in the dataset
-som = MiniSom(x=2,y=3,input_len=1024)
+som = MiniSom(x=4,y=4,input_len=1024)
 
 # Randomly initializing the weights of each node
 som.random_weights_init(X)
